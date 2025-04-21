@@ -26,9 +26,10 @@ function Register() {
       setPassword("");
 
       // Redirigir al usuario a la página de inicio de sesión
+      // TODO : Cambiar la ruta a la página de inicio de sesión y añadir icono de espera
       setTimeout(() => {
-        navigate("/"); // Redirigir a la página de inicio de sesión (/)
-      }, 1500); // Esperar 1.5 segundos antes de redirigir
+        navigate("/"); // Redirigir a la página de login (/)
+      }, 1000); // Esperar 1 segundo antes de redirigir
     } catch (err) {
       console.error(err);
       const detail =
