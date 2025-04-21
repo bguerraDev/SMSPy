@@ -1,3 +1,0 @@
-&6U9mrSUn3H6
-
-ruta de .venv -> .\.venv\Scripts\activate
