@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import api from "../services/api";
 import { useToast } from "../services/getExportToastManager";
+import { useNavigate } from "react-router-dom";
 
 function Profile() {
   const [user, setUser] = useState(null);
@@ -8,11 +9,17 @@ function Profile() {
   const [previewUrl, setPreviewUrl] = useState(null);
   const fileInputRef = useRef(null);
   const { showToast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await api.get("profile/"); // TODO OBSERVAR SI FUNCIONA CORRECTAMENTE
+        const token = localStorage.getItem("access");
+        if (!token) {
+          return; // Si no hay token, no intentes cargar el perfil
+        }
+
+        const response = await api.get("profile/");
         setUser(response.data);
         setPreviewUrl(
           response.data.avatar_url ? response.data.avatar_url : null
@@ -60,64 +67,93 @@ function Profile() {
   };
 
   if (!user) {
-    return <div>Cargando perfil...</div>;
+    return (
+      <div className="text-center text-white mt-10">Cargando perfil...</div>
+    );
   }
 
-  return (
-    <div className="container mt-4">
-      <h2>Mi perfil</h2>
+  const handleLogout = () => {
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    navigate("/");
+    setTimeout(() => {
+      const event = new CustomEvent("manualLogout");
+      window.dispatchEvent(event);
+    }, 100); // Pequeño delay para asegurar que se haya montado <App />
+  };
 
-      <form onSubmit={handleSubmit}>
-        <div className="mb-3">
-          <label className="form-label">Usuario</label>
+  return (
+    <div className="max-w-md mx-auto bg-gray-900 text-white p-6 rounded-lg shadow-lg mt-10">
+      <h2 className="text-2xl font-bold mb-4 text-center">Mi perfil</h2>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block mb-1 font-medium">Usuario</label>
           <input
             type="text"
-            className="form-control"
+            className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
             value={user.username}
             disabled
           />
         </div>
 
-        <div className="mb-3">
-          <label className="form-label">Email</label>
+        <div>
+          <label className="block mb-1 font-medium">Email</label>
           <input
             type="email"
-            className="form-control"
+            className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
             value={user.email}
             disabled
           />
         </div>
 
-        <div className="mb-3">
-          <label className="form-label">Avatar</label>
-          <div>
-            {previewUrl ? (
-              <img
-                src={previewUrl}
-                alt="Avatar"
-                className="rounded"
-                style={{ maxWidth: "80px" }}
-              />
-            ) : (
-              <p>Sin foto de perfil</p>
-            )}
-          </div>
+        <div>
+          <label className="block mb-1 font-medium">Avatar actual</label>
+          {previewUrl ? (
+            <img
+              src={previewUrl}
+              alt="Avatar"
+              className="rounded-full w-20 h-20 object-cover"
+            />
+          ) : (
+            <p className="text-gray-400">Sin foto de perfil</p>
+          )}
         </div>
 
-        <div className="mb-3">
-          <label className="form-label">Cambiar avatar</label>
+        <div>
+          <label className="block mb-1 font-medium">Cambiar avatar</label>
+          <div className="flex items-center gap-4">
+            <label
+              htmlFor="file-upload"
+              className="btn-secondary cursor-pointer"
+            >
+              Seleccionar archivo
+            </label>
+            <input
+              id="file-upload"
+              type="file"
+              className="hidden"
+              onChange={handleFileChange}
+              ref={fileInputRef}
+            />
+
+            <span className="text-sm text-gray-400">
+              {avatarFile ? avatarFile.name : "Ningún archivo seleccionado"}
+            </span>
+          </div>
           <input
+            id="avatar-upload"
             type="file"
-            className="form-control"
             accept="image/*"
             onChange={handleFileChange}
             ref={fileInputRef}
+            className="hidden"
           />
         </div>
 
         <button
           type="submit"
-          className="btn btn-primary"
+          className="btn-primary w-full"
           disabled={
             !avatarFile || (previewUrl && previewUrl === user.avatar_url)
           }
@@ -132,6 +168,22 @@ function Profile() {
           Actualizar
         </button>
       </form>
+      <div className="mt-6 flex flex-col md:flex-row justify-center gap-4">
+        <button
+          type="button"
+          onClick={() => navigate("/messages")}
+          className="bg-gradient-to-r from-pink-500 to-blue-500 text-white font-bold py-2 px-6 rounded-lg hover:scale-105 transition"
+        >
+          Ir a mis mensajes
+        </button>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="bg-gradient-to-r from-red-500 to-pink-500 text-white font-bold py-2 px-6 rounded-lg hover:scale-105 transition"
+        >
+          Cerrar sesión
+        </button>
+      </div>
     </div>
   );
 }

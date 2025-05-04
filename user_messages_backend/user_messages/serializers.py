@@ -30,14 +30,28 @@ class MessageSerializer(serializers.ModelSerializer):
     receiver_username = serializers.CharField(source='receiver.username', read_only=True)
     sent_at = serializers.SerializerMethodField()
 
+    # Obtener la URL de la imagen de la persona que envía/recibe el mensaje
+    sender_avatar_url = serializers.SerializerMethodField()
+    receiver_avatar_url = serializers.SerializerMethodField()
+
     class Meta:
         model = Message
-        fields = ['id', 'sender', 'sender_username', 'receiver', 'receiver_username', 'content', 'image', 'sent_at']
+        fields = ['id', 'sender', 'sender_username', 'sender_avatar_url', 'receiver', 'receiver_username', 'receiver_avatar_url', 'content', 'image', 'sent_at']
         read_only_fields = ['sender', 'sent_at']
 
     def get_sent_at(self, obj):
-        local_sent = localtime(obj.sent_at) # convierte de UTC a zona local (Europe/Madrid)
-        return local_sent.strftime('%d/%m/%Y %H:%M:%S')
+        local_sent = localtime(obj.sent_at)
+        timezone_name = local_sent.tzname() or ''  # Evita None si no tiene zona definida
+        return f"{local_sent.strftime('%d/%m/%Y %H:%M:%S')} {timezone_name}"
+    
+    # Obtener la URL de la imagen de la persona que envía/recibe el mensaje
+    def get_sender_avatar_url(self, obj):
+        request = self.context.get('request')
+        return request.build_absolute_uri(obj.sender.avatar.url) if obj.sender.avatar else None
+    
+    def get_receiver_avatar_url(self, obj):
+        request = self.context.get('request')
+        return request.build_absolute_uri(obj.receiver.avatar.url) if obj.receiver.avatar else None
     
 class UserSerializer(serializers.ModelSerializer):
     avatar_url = serializers.SerializerMethodField()
